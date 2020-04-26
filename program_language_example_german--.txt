@@ -1,0 +1,21 @@
+addiere 1 zu 4
+ende
+
+ganzzahl a ist 10
+ganzzahl b ist 4
+wenn a gleichwie b 
+  drucken "Sie sind gleich"
+sonst wenn a größerals b
+  drucken "a ist das größte"
+sonst 
+ Drucken "b ist das größte"
+ende
+
+
+solange a kleiner als b ist
+  addiere 1 zu a
+ende
+
+solange a größer als b ist
+  zähle 1 von a
+ende
