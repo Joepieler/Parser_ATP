@@ -30,31 +30,43 @@ class Token():
 
     def __repr__(self):
         if self.value != None:
-            return "[{} {}]".format(self.type, self.value)
+            return "|{} {}|".format(self.type, self.value)
 
         else:
-            return "[{}]".format(self.type)
+            return "|{}|".format(self.type)
 
 
 def split_l(lines: list, i: int):
   if i == len(lines) - 1:
-    return [lines[i].rstrip('\n')]
+    if lines[i] != '\n':
+      return [lines[i].rstrip('\n'), None]
   else:
-    return [lines[i].rstrip('\n')] + split_l(lines, i + 1 )
-
-
-def split_lines_words(l :list, i :int)->list:
-    if i == len(l) - 1:
-        return list(l[i].split(" "))
+    if lines[i] != '\n':
+      return [lines[i].rstrip('\n')] + [split_l(lines, i + 1 )]
     else:
-        return list(l[i].split(" ")) + list(split_lines_words(l, i+1))
+      return split_l(lines, i + 1 )
 
 
-def fucntion_on_list(f , l: list, i)->list:
-    if i == len(l) - 1:
-        return [f(l[i])]
+def split_lines_words(l :list)->list:
+    if l[1] == None:
+        return [l[0].split(" "), None]
     else:
-        return [f(l[i])] + fucntion_on_list(f, l, i+1)
+        return [l[0].split(" ")] + [split_lines_words(l[1])]
+
+
+#function on a normal list [1,2,3]
+def Put_tokens_on_list(token_function, l: list, i: int)->list:
+    if i == len(l) - 1:
+        return [token_function(l[i])]
+    else:
+        return [token_function(l[i])] + Put_tokens_on_list(token_function, l, i+1)
+
+## for list of inf size like [1,[2,[3,None]]]
+def Put_tokens_on_head_tail_list(loop_fuction ,token_function, l: list)->list:
+    if l[1] == None:
+        return [loop_fuction(token_function, l[0], 0), None]
+    else:
+        return [loop_fuction(token_function, l[0], 0)] + [Put_tokens_on_head_tail_list(loop_fuction,token_function, l[1])]
 
 
 def get_token(string : str) ->Token:
@@ -84,7 +96,7 @@ def get_token(string : str) ->Token:
 
 
 
-
 lines = split_l(lines, 0)
-print(split_lines_words(lines,0))
-print(fucntion_on_list(get_token, split_lines_words(lines,0),0))
+lines = split_lines_words(lines)
+tokenlist = Put_tokens_on_head_tail_list(Put_tokens_on_list, get_token, lines)
+print(tokenlist)
