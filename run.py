@@ -110,13 +110,10 @@ class Node(object):
   pass
 
 class NumberNode(Node):
-  def __init__(self, token: Token):
-    self.value = token.value
+  def __init__(self, value: int):
+    self.value = value
 
   def __repr__(self):
-    return f'{self.value}'
-
-  def __str__(self):
     return f'{self.value}'
 
 class VariableNode(Node):
@@ -146,7 +143,7 @@ class ConditionNode(Node):
     self.right = right
 
   def __repr__(self):
-    return f'{self.left.value}, {self.condition}, {self.right.value}'
+    return f'{self.left.value}, {self.token}, {self.right.value}'
 
 class IfNode(Node):
   def __init__(self, condition: ConditionNode):
@@ -166,17 +163,17 @@ class WhileNode(Node):
 def parser(tokens: list, index: int=0, node: Node=None)->Node:
   if index == len(tokens) - 1:
     if tokens[index].type == Token_Types.INTEGER:
-      return NumberNode(tokens[index])
+      return NumberNode(tokens[index].value)
     elif tokens[index].type == Token_Types.VALUE:
-      return VariableNode(tokens[index].value, tokens[index].value)
+      return VariableNode(tokens[index], tokens[index].value)
     else:
       raise Exception("operator has no right side")
   else:
     if tokens[index].type == Token_Types.INTEGER:
-      return  parser(tokens, index + 1, NumberNode(tokens[index]))
+      return  parser(tokens, index + 1, NumberNode(tokens[index].value))
     elif tokens[index].type == Token_Types.VALUE:
       if tokens[index].value != None:
-        return parser(tokens, index + 1, VariableNode(tokens[index], None))
+        return parser(tokens, index + 1, VariableNode(tokens[index], tokens[index].value))
     elif tokens[index].type in (Token_Types.MULTIPLUCATION, Token_Types.DIVISION, Token_Types.SUMMIN, Token_Types.SUMPLUS):
       return BinairyOperationNode(node, tokens[index], parser(tokens, index + 1))
     elif tokens[index].type in (Token_Types.SMALER, Token_Types.LARGER, Token_Types.SAME):
@@ -228,11 +225,11 @@ def do_condition(token_type, left, right)->bool:
 
 def Is(node: Node, state:dict )->dict:
   if type(node.value) == NumberNode:
-    state[node.token.value] = node.value
+    state[node.token.value] = node.value.value
 
   if type(node.value) in (BinairyOperationNode, ConditionNode):
     if type(node.value.left) == VariableNode:
-      left = state[node.value.left]
+      left = state[node.value.left.value]
     else:
       left = node.value.left.value
     if type(node.value.right) == VariableNode:
@@ -282,5 +279,3 @@ tree = parser_on_multiline(parser, tokenlist)
 #print(tree)
 states = run(tree, states)
 print(states)
-
-#print(tree)
