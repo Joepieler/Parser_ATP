@@ -17,11 +17,11 @@ import enum
 
 
 class Token_Types(enum.Enum):
-    VALUE = None
+    VARIABLE = None
     SUMPLUS = 'addiere'
     SUMMIN = 'zähle'
     MULTIPLUCATION = 'multiplizieren'
-    DIVISION = 'Teilen'
+    DIVISION = 'teilen'
     IS = 'ist'
     IF = 'wenn'
     ELSE = 'sonst'
@@ -75,30 +75,34 @@ def Put_tokens_on_head_tail_list(loop_fuction ,token_function, l: list)->list:
 
 
 def get_token(string: str)->Token:
-    if string == Token_Types.SUMPLUS.value:
+    if string == Token_Types.SUMPLUS.value:     # Plus
         return Token(Token_Types.SUMPLUS, string)
-    elif string == Token_Types.MULTIPLUCATION.value:
+    elif string == Token_Types.SUMMIN.value:    # min
+        return Token(Token_Types.SUMIN, string)
+    elif string == Token_Types.MULTIPLUCATION.value:# Multiply
         return Token(Token_Types.MULTIPLUCATION, string)
-    elif string == Token_Types.IS.value:
+    elif string == Token_Types.DIVISION.value:  # Devide
+      return Token(Token_Types.DIVISION, string)
+    elif string == Token_Types.IS.value:        # Is
         return Token(Token_Types.IS, string)
-    elif string == Token_Types.IF.value:
+    elif string == Token_Types.IF.value:        # If
         return Token(Token_Types.IF, string)
-    elif string == Token_Types.ELSE.value:
+    elif string == Token_Types.ELSE.value:      # Else
         return Token(Token_Types.ELSE, string)
-    elif string == Token_Types.WHILE.value:
+    elif string == Token_Types.WHILE.value:     # While
         return Token(Token_Types.WHILE, string)
-    elif string == Token_Types.END.value:
+    elif string == Token_Types.END.value:       # End
         return Token(Token_Types.END, string)
-    elif string == Token_Types.SMALER.value:
+    elif string == Token_Types.SMALER.value:    # Smaller then
         return Token(Token_Types.SMALER, string)
-    elif string == Token_Types.LARGER.value:
+    elif string == Token_Types.LARGER.value:    # Larger then
         return Token(Token_Types.LARGER, string)
-    elif string == Token_Types.SAME.value:
+    elif string == Token_Types.SAME.value:      # Same as
         return Token(Token_Types.SAME, string)
-    elif string.isdigit():
+    elif string.isdigit():                      # Integer
         return Token(Token_Types.INTEGER, int(string))
-    else:
-        return Token(Token_Types.VALUE, string)
+    else:                                       # Variable
+        return Token(Token_Types.VARIABLE, string)
 
 ########################################################################################################################
 #
@@ -106,9 +110,13 @@ def get_token(string: str)->Token:
 #
 ########################################################################################################################
 
+
+#Base Node
 class Node(object):
   pass
 
+
+#Node for Numbers
 class NumberNode(Node):
   def __init__(self, value: int):
     self.value = value
@@ -116,6 +124,8 @@ class NumberNode(Node):
   def __repr__(self):
     return f'{self.value}'
 
+
+#Node For variable
 class VariableNode(Node):
   def __init__(self, token: Token, value:int = None):
     self.token = token
@@ -124,7 +134,9 @@ class VariableNode(Node):
   def __repr__(self):
     return f'{self.token} = [{self.value}]'
 
-class BinairyOperationNode(Node):
+
+#Note for Operators
+class OperationNode(Node):
   def __init__(self, left, token, right):
     self.left = left
     self.token = token
@@ -133,9 +145,8 @@ class BinairyOperationNode(Node):
   def __repr__(self):
     return f'{self.left}, {self.token}, {self.right}'
 
-  def __str__(self):
-    return f'{self.left.value}, {self.token.type}, {self.right.value}'
 
+#Note for Conditions
 class ConditionNode(Node):
   def __init__(self, left:Node , token: Token, right:Node):
     self.left = left
@@ -145,6 +156,8 @@ class ConditionNode(Node):
   def __repr__(self):
     return f'{self.left.value}, {self.token}, {self.right.value}'
 
+
+#Note for If statments
 class IfNode(Node):
   def __init__(self, condition: ConditionNode):
     self.condition = condition
@@ -152,6 +165,8 @@ class IfNode(Node):
   def __repr__(self):
     return f'{self.condition}'
 
+
+#Node for While loops
 class WhileNode(Node):
   def __init__(self, condition):
     self.condition = condition
@@ -160,45 +175,48 @@ class WhileNode(Node):
     return f'{self.condition}'
 
 
+#Main parser function
 def parser(tokens: list, index: int=0, node: Node=None)->Node:
+  # The end of a line can only be an integer or a variable
   if index == len(tokens) - 1:
-    if tokens[index].type == Token_Types.INTEGER:
+    if tokens[index].type == Token_Types.INTEGER: # Integer
       return NumberNode(tokens[index].value)
-    elif tokens[index].type == Token_Types.VALUE:
+    elif tokens[index].type == Token_Types.VARIABLE: # Variable
       return VariableNode(tokens[index], tokens[index].value)
     else:
       raise Exception("operator has no right side")
   else:
-    if tokens[index].type == Token_Types.INTEGER:
+    if tokens[index].type == Token_Types.INTEGER: # Intergers
       return  parser(tokens, index + 1, NumberNode(tokens[index].value))
-    elif tokens[index].type == Token_Types.VALUE:
-      if tokens[index].value != None:
-        return parser(tokens, index + 1, VariableNode(tokens[index], tokens[index].value))
-    elif tokens[index].type in (Token_Types.MULTIPLUCATION, Token_Types.DIVISION, Token_Types.SUMMIN, Token_Types.SUMPLUS):
-      return BinairyOperationNode(node, tokens[index], parser(tokens, index + 1))
-    elif tokens[index].type in (Token_Types.SMALER, Token_Types.LARGER, Token_Types.SAME):
+    elif tokens[index].type == Token_Types.VARIABLE: # Variables
+      return parser(tokens, index + 1, VariableNode(tokens[index], tokens[index].value))
+    elif tokens[index].type in (Token_Types.MULTIPLUCATION, Token_Types.DIVISION, Token_Types.SUMMIN, Token_Types.SUMPLUS): # Operations
+      return OperationNode(node, tokens[index], parser(tokens, index + 1))
+    elif tokens[index].type in (Token_Types.SMALER, Token_Types.LARGER, Token_Types.SAME): # Conditions
       return ConditionNode(node, tokens[index], parser(tokens, index + 1))
-    elif tokens[index].type == Token_Types.WHILE:
+    elif tokens[index].type == Token_Types.WHILE: # While loops
       return WhileNode(parser(tokens, index +1))
-    elif tokens[index].type == Token_Types.IF:
+    elif tokens[index].type == Token_Types.IF:# If statements
       return IfNode(parser(tokens, index + 1))
-    elif tokens[index].type == Token_Types.IS:
+    elif tokens[index].type == Token_Types.IS:# Is operator
       return VariableNode(node.token, parser(tokens, index + 1))
     else:
       raise Exception("geen operator")
 
-
+#Run parser function on every line of the code
 def parser_on_multiline(parser_function, tokens_list: list)->list:
   if tokens_list[1] == None:
     return [parser_function(tokens_list[0]), None]
   else:
     return [parser_function(tokens_list[0])] + [parser_on_multiline(parser_function, tokens_list[1])]
 
+
 ########################################################################################################################
 #
 # Run
 #
 ########################################################################################################################
+
 
 def do_operation(token_type, left, right)->int:
   if token_type == Token_Types.SUMPLUS:
@@ -227,7 +245,8 @@ def Is(node: Node, state:dict )->dict:
   if type(node.value) == NumberNode:
     state[node.token.value] = node.value.value
 
-  if type(node.value) in (BinairyOperationNode, ConditionNode):
+  #Get The left and right for the opperators
+  if type(node.value) in (OperationNode, ConditionNode):
     if type(node.value.left) == VariableNode:
       left = state[node.value.left.value]
     else:
@@ -236,11 +255,14 @@ def Is(node: Node, state:dict )->dict:
       right = state[node.value.right.value]
     else:
       right = node.value.right.value
-    if type(node.value) == BinairyOperationNode:
+
+    #Call opperators
+    if type(node.value) == OperationNode:
       state[node.token.value] = do_operation(node.value.token.type, left, right)
     elif type(node.value) == ConditionNode:
       state[node.token.value] = do_condition(node.value.token.type, left, right)
 
+  #Get value for variable
   elif type(node.value) == VariableNode:
     if node.value.token in state:
       state[node.token.value] = state[node.value.token]
@@ -252,8 +274,7 @@ def Is(node: Node, state:dict )->dict:
 
 def run(parsedFuctions: list, state: dir):
   if parsedFuctions[1] == None:
-    if type(parsedFuctions[0]) == VariableNode:
-      return Is(parsedFuctions[0], state)
+    return Is(parsedFuctions[0], state)
   else:
     return run(parsedFuctions[1], Is(parsedFuctions[0], state))
 
