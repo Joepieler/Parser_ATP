@@ -160,7 +160,7 @@ class ConditionNode(Node):
 #Note for If statments
 class IfNode(Node):
   def __init__(self, condition: ConditionNode):
-    self.condition = condition
+    self.value = condition
 
   def __repr__(self):
     return f'{self.condition}'
@@ -169,10 +169,17 @@ class IfNode(Node):
 #Node for While loops
 class WhileNode(Node):
   def __init__(self, condition):
-    self.condition = condition
+    self.value = condition
 
   def __repr__(self):
-    return f'{self.condition}'
+    return f'{self.value}'
+
+class EndNode(Node):
+  def __init__(self, begin):
+    self.begin = begin
+
+  def __repr__(self):
+    return f'{self.begin}'
 
 
 #Main parser function
@@ -183,6 +190,8 @@ def parser(tokens: list, index: int=0, node: Node=None)->Node:
       return NumberNode(tokens[index].value)
     elif tokens[index].type == Token_Types.VARIABLE: # Variable
       return VariableNode(tokens[index], tokens[index].value)
+    elif tokens[index].type == Token_Types.END:
+      return EndNode(None)
     else:
       raise Exception("operator has no right side")
   else:
@@ -198,6 +207,8 @@ def parser(tokens: list, index: int=0, node: Node=None)->Node:
       return WhileNode(parser(tokens, index +1))
     elif tokens[index].type == Token_Types.IF:# If statements
       return IfNode(parser(tokens, index + 1))
+    elif tokens[index].type == Token_Types.END:
+      return EndNode(None);
     elif tokens[index].type == Token_Types.IS:# Is operator
       return VariableNode(node.token, parser(tokens, index + 1))
     else:
@@ -218,34 +229,10 @@ def parser_on_multiline(parser_function, tokens_list: list)->list:
 ########################################################################################################################
 
 
-def do_operation(token_type, left, right)->int:
-  if token_type == Token_Types.SUMPLUS:
-    return left + right
-  elif token_type == Token_Types.SUMMIN:
-    return left - right
-  elif token_type == Token_Types.MULTIPLUCATION:
-    return left * right
-  elif token_type == Token_Types.DIVISION:
-    if right != 0:
-      return left / right
-    else:
-      raise Exception("cannot divide by zero")
 
-def do_condition(token_type, left, right)->bool:
-  if token_type == Token_Types.SAME:
-    return left == right
-  elif token_type == Token_Types.SMALER:
-    return left < right
-  elif token_type == Token_Types.LARGER:
-    return left > right
-
-
-
-def Is(node: Node, state:dict )->dict:
-  if type(node.value) == NumberNode:
-    state[node.token.value] = node.value.value
-
-  #Get The left and right for the opperators
+def Get_left_and_right(node, state):
+  left = None
+  right = None
   if type(node.value) in (OperationNode, ConditionNode):
     if type(node.value.left) == VariableNode:
       left = state[node.value.left.value]
@@ -255,12 +242,46 @@ def Is(node: Node, state:dict )->dict:
       right = state[node.value.right.value]
     else:
       right = node.value.right.value
+  return [left, right]
 
-    #Call opperators
-    if type(node.value) == OperationNode:
-      state[node.token.value] = do_operation(node.value.token.type, left, right)
-    elif type(node.value) == ConditionNode:
-      state[node.token.value] = do_condition(node.value.token.type, left, right)
+
+
+def do_operation(node, states)->int:
+  childs = Get_left_and_right(node, states)
+  if node.value.token.type == Token_Types.SUMPLUS:
+    return childs[0] + childs[1]
+  elif node.token.value == Token_Types.SUMMIN:
+    return childs[0] - childs[1]
+  elif node.token.value == Token_Types.MULTIPLUCATION:
+    return childs[0] * childs[1]
+  elif node.token.value == Token_Types.DIVISION:
+    if childs[1] != 0:
+      return childs[0] / childs[1]
+    else:
+      raise Exception("cannot divide by zero")
+
+
+
+def do_condition(node, states)->bool:
+  childs = Get_left_and_right(node, states)
+  if node.value.token.type == Token_Types.SAME:
+    return childs[0] == childs[1]
+  elif node.value.token.type == Token_Types.SMALER:
+    return childs[0] < childs[1]
+  elif node.value.token.type == Token_Types.LARGER:
+    return childs[0] > childs[1]
+
+
+
+def Is(node: Node, state:dict )->dict:
+  if type(node.value) == NumberNode:
+    state[node.token.value] = node.value.value
+
+  #Call opperators
+  if type(node.value) == OperationNode:
+    state[node.token.value] = do_operation(node, state)
+  elif type(node.value) == ConditionNode:
+    state[node.token.value] = do_condition(node, state)
 
   #Get value for variable
   elif type(node.value) == VariableNode:
@@ -272,11 +293,62 @@ def Is(node: Node, state:dict )->dict:
 
 
 
-def run(parsedFuctions: list, state: dir):
-  if parsedFuctions[1] == None:
-    return Is(parsedFuctions[0], state)
+def FindEnd(parserlist):
+  if type(parserlist[0]) == EndNode:
+    if parserlist[1] != None:
+      return parserlist[1]
   else:
-    return run(parsedFuctions[1], Is(parsedFuctions[0], state))
+    return FindEnd(parserlist[1])
+
+
+
+def GetLoop(parserlist: list, whilenode: WhileNode, state: dir)->list:
+  if parserlist[1] == None and type(parserlist[0]) == EndNode:
+    return [EndNode(whilenode), None]
+  else:
+    if type(parserlist[0]) == EndNode:
+      return [EndNode(whilenode), None]
+    else:
+      return [parserlist[0]] + [GetLoop(parserlist[1], whilenode, state)]
+
+
+
+def While(parserList: list, node: Node, state: dir, whilenode: WhileNode = None):
+  if whilenode == None:
+    if do_condition(node, state) == True:
+      parserlist = GetLoop(parserList[1], node, state)
+      state = run(parserlist, state)
+      return While(parserlist, node, state, node)
+    else:
+      return state
+  else:
+    if type(node) == WhileNode:
+      if do_condition(whilenode, state):
+        return While(parserList, node, run(parserList, state), node)
+      else:
+        return state
+
+
+
+def run(parsedFuctions: list, state: dir):
+    if parsedFuctions[1] == None:
+      if type(parsedFuctions[0]) == VariableNode:
+        return Is(parsedFuctions[0], state)
+      elif type(parsedFuctions[0]) == EndNode:
+        return state
+    else:
+      if type(parsedFuctions[0]) == WhileNode:
+        print("while")
+        state = run(FindEnd(parsedFuctions), While(parsedFuctions, parsedFuctions[0], state))
+        print("end while")
+        return state
+      elif type(parsedFuctions[0]) == VariableNode:
+        return run(parsedFuctions[1], Is(parsedFuctions[0], state))
+      elif type(parsedFuctions[0]) == EndNode:
+        return state
+      else:
+        return state
+
 
 
 ########################################################################################################################
@@ -284,6 +356,8 @@ def run(parsedFuctions: list, state: dir):
 # -----
 #
 ########################################################################################################################
+
+
 
 file = "sum.gmm"
 
