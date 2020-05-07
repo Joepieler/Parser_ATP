@@ -369,7 +369,7 @@ def While(parserList: list, node: Node, state: dir, whilenode: WhileNode = None)
 #The if statement function it returns the state
 def If(parserList: list, node , state: dir):
   if do_condition(node, state):
-    return run(GetLoop(parserList[1], node, state), state)
+    return run(parserList[1], state)
   else:
     return state
 
@@ -377,20 +377,14 @@ def If(parserList: list, node , state: dir):
 
 #The main run function
 def run(parsedFuctions: list, state: dir):
-    if parsedFuctions[1] == None:
-      if type(parsedFuctions[0]) == VariableNode:
-        return Is(parsedFuctions[0], state)
-      elif type(parsedFuctions[0]) == EndNode:
-        return state
-    else:
-      if type(parsedFuctions[0]) == IfNode:
-        return run(FindEnd(parsedFuctions), If(parsedFuctions, parsedFuctions[0], state))
-      elif type(parsedFuctions[0]) == WhileNode:
-        return run(FindEnd(parsedFuctions), While(parsedFuctions, parsedFuctions[0], state))
-      elif type(parsedFuctions[0]) == VariableNode:
-        return run(parsedFuctions[1], Is(parsedFuctions[0], state))
-      elif type(parsedFuctions[0]) == EndNode:
-        return state
+    if type(parsedFuctions[0]) == IfNode:
+      return run(FindEnd(parsedFuctions), If(parsedFuctions, parsedFuctions[0], state))
+    elif type(parsedFuctions[0]) == WhileNode:
+      return run(FindEnd(parsedFuctions), While(parsedFuctions, parsedFuctions[0], state))
+    elif type(parsedFuctions[0]) == VariableNode:
+      return run(parsedFuctions[1], Is(parsedFuctions[0], state))
+    elif type(parsedFuctions[0]) == EndNode:
+      return state
 
 
 
