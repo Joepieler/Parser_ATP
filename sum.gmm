@@ -1,0 +1,18 @@
+a ist 20
+b ist 10
+wenn a größer b
+a ist a zähle 15
+ende
+solange a kleiner b
+a ist a addiere 1
+ende
+wenn a gleichwie b
+b ist b multiplizieren 2
+ende
+wenn a gleichwie b
+b ist b multiplizieren 2
+ende
+c ist 20
+wenn c gleichwie b
+b ist b teilen 2
+ende
