@@ -163,7 +163,7 @@ class IfNode(Node):
     self.value = condition
 
   def __repr__(self):
-    return f'{self.condition}'
+    return f'{self.value}'
 
 
 #Node for While loops
@@ -297,6 +297,8 @@ def FindEnd(parserlist):
   if type(parserlist[0]) == EndNode:
     if parserlist[1] != None:
       return parserlist[1]
+    else:
+      return parserlist
   else:
     return FindEnd(parserlist[1])
 
@@ -330,6 +332,13 @@ def While(parserList: list, node: Node, state: dir, whilenode: WhileNode = None)
 
 
 
+def If(parserList: list, node , state: dir):
+  if do_condition(node, state):
+    return run(GetLoop(parserList[1], node, state), state)
+  else:
+    return state
+
+
 def run(parsedFuctions: list, state: dir):
     if parsedFuctions[1] == None:
       if type(parsedFuctions[0]) == VariableNode:
@@ -337,16 +346,13 @@ def run(parsedFuctions: list, state: dir):
       elif type(parsedFuctions[0]) == EndNode:
         return state
     else:
-      if type(parsedFuctions[0]) == WhileNode:
-        print("while")
-        state = run(FindEnd(parsedFuctions), While(parsedFuctions, parsedFuctions[0], state))
-        print("end while")
-        return state
+      if type(parsedFuctions[0]) == IfNode:
+        return run(FindEnd(parsedFuctions), If(parsedFuctions, parsedFuctions[0], state))
+      elif type(parsedFuctions[0]) == WhileNode:
+        return run(FindEnd(parsedFuctions), While(parsedFuctions, parsedFuctions[0], state))
       elif type(parsedFuctions[0]) == VariableNode:
         return run(parsedFuctions[1], Is(parsedFuctions[0], state))
       elif type(parsedFuctions[0]) == EndNode:
-        return state
-      else:
         return state
 
 
