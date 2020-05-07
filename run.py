@@ -34,11 +34,14 @@ class Token_Types(enum.Enum):
 
 class Token():
     def __init__(self, Token_Types, value):
-        self.type = Token_Types
-        self.value = value
+      self.type = Token_Types
+      self.value = value
 
     def __repr__(self):
-        return "Token(Type {}, Value\"{}\")".format(self.type.name, self.value)
+      return "Token(Type {}, Value\"{}\")".format(self.type.name, self.value)
+
+    def __str__(self):
+      return "Token(Type {}, Value\"{}\")".format(self.type.name, self.value)
 
 
 def split_l(lines: list, i: int=0)->list:
@@ -124,6 +127,9 @@ class NumberNode(Node):
   def __repr__(self):
     return f'{self.value}'
 
+  def __str__(self):
+    return f'{self.value}'
+
 
 #Node For variable
 class VariableNode(Node):
@@ -132,6 +138,9 @@ class VariableNode(Node):
     self.value = value
 
   def __repr__(self):
+    return f'{self.token} = [{self.value}]'
+
+  def __str__(self):
     return f'{self.token} = [{self.value}]'
 
 
@@ -145,6 +154,9 @@ class OperationNode(Node):
   def __repr__(self):
     return f'{self.left}, {self.token}, {self.right}'
 
+  def __str__(self):
+    return f'{self.left}, {self.token}, {self.right}'
+
 
 #Note for Conditions
 class ConditionNode(Node):
@@ -156,6 +168,10 @@ class ConditionNode(Node):
   def __repr__(self):
     return f'{self.left.value}, {self.token}, {self.right.value}'
 
+  def __str__(self):
+    return f'{self.left.value}, {self.token}, {self.right.value}'
+
+
 
 #Note for If statments
 class IfNode(Node):
@@ -164,6 +180,10 @@ class IfNode(Node):
 
   def __repr__(self):
     return f'{self.value}'
+
+  def __str__(self):
+    return f'{self.value}'
+
 
 
 #Node for While loops
@@ -174,12 +194,21 @@ class WhileNode(Node):
   def __repr__(self):
     return f'{self.value}'
 
+  def __str__(self):
+    return f'{self.value}'
+
+
+
 class EndNode(Node):
   def __init__(self, begin):
     self.begin = begin
 
   def __repr__(self):
     return f'{self.begin}'
+
+  def __str__(self):
+    return f'{self.value}'
+
 
 
 #Main parser function
@@ -230,6 +259,7 @@ def parser_on_multiline(parser_function, tokens_list: list)->list:
 
 
 
+#Get the left and right child
 def Get_left_and_right(node, state):
   left = None
   right = None
@@ -246,6 +276,7 @@ def Get_left_and_right(node, state):
 
 
 
+#returns the result of a operation in int
 def do_operation(node, states)->int:
   childs = Get_left_and_right(node, states)
   if node.value.token.type == Token_Types.SUMPLUS:
@@ -256,12 +287,11 @@ def do_operation(node, states)->int:
     return childs[0] * childs[1]
   elif node.token.value == Token_Types.DIVISION:
     if childs[1] != 0:
-      return childs[0] / childs[1]
-    else:
-      raise Exception("cannot divide by zero")
+      return int(childs[0] / childs[1])
 
 
 
+#returns a bool of the result
 def do_condition(node, states)->bool:
   childs = Get_left_and_right(node, states)
   if node.value.token.type == Token_Types.SAME:
@@ -273,6 +303,7 @@ def do_condition(node, states)->bool:
 
 
 
+#adds a value to the state dir and returns tje dir
 def Is(node: Node, state:dict )->dict:
   if type(node.value) == NumberNode:
     state[node.token.value] = node.value.value
@@ -293,6 +324,7 @@ def Is(node: Node, state:dict )->dict:
 
 
 
+#Finds the first end en returns the rest of the parserser
 def FindEnd(parserlist):
   if type(parserlist[0]) == EndNode:
     if parserlist[1] != None:
@@ -304,6 +336,7 @@ def FindEnd(parserlist):
 
 
 
+#Returns the loop
 def GetLoop(parserlist: list, whilenode: WhileNode, state: dir)->list:
   if parserlist[1] == None and type(parserlist[0]) == EndNode:
     return [EndNode(whilenode), None]
@@ -315,6 +348,7 @@ def GetLoop(parserlist: list, whilenode: WhileNode, state: dir)->list:
 
 
 
+#The while loop function returns the state
 def While(parserList: list, node: Node, state: dir, whilenode: WhileNode = None):
   if whilenode == None:
     if do_condition(node, state) == True:
@@ -332,6 +366,7 @@ def While(parserList: list, node: Node, state: dir, whilenode: WhileNode = None)
 
 
 
+#The if statement function it returns the state
 def If(parserList: list, node , state: dir):
   if do_condition(node, state):
     return run(GetLoop(parserList[1], node, state), state)
@@ -339,6 +374,8 @@ def If(parserList: list, node , state: dir):
     return state
 
 
+
+#The main run function
 def run(parsedFuctions: list, state: dir):
     if parsedFuctions[1] == None:
       if type(parsedFuctions[0]) == VariableNode:
