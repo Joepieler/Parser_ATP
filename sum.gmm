@@ -15,4 +15,8 @@ ende
 c ist 20
 wenn c gleichwie b
 b ist b teilen 2
+abdrucken a
+abdrucken b
+abdrucken c
+abdrucken 10
 ende

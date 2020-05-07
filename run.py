@@ -31,10 +31,11 @@ class Token_Types(enum.Enum):
     SAME = 'gleichwie'
     WHILE = 'solange'
     INTEGER = type(int)
+    PRINT = "abdrucken"
 
 class Token():
-    def __init__(self, Token_Types, value):
-      self.type = Token_Types
+    def __init__(self, token_types: Token_Types, value):
+      self.type = token_types
       self.value = value
 
     def __repr__(self):
@@ -44,7 +45,7 @@ class Token():
       return "Token(Type {}, Value\"{}\")".format(self.type.name, self.value)
 
 
-def split_l(lines: list, i: int=0)->list:
+def split_l(lines: list, i: int = 0)->list:
   if i == len(lines) - 1:
     if lines[i] != '\n':
       return [lines[i].rstrip('\n'), None]
@@ -55,26 +56,26 @@ def split_l(lines: list, i: int=0)->list:
       return split_l(lines, i + 1 )
 
 
-def split_lines_words(l :list)->list:
-    if l[1] == None:
-        return [l[0].split(" "), None]
-    else:
-        return [l[0].split(" ")] + [split_lines_words(l[1])]
+def split_lines_words(l: list)->list:
+  if l[1] == None:
+    return [l[0].split(" "), None]
+  else:
+     return [l[0].split(" ")] + [split_lines_words(l[1])]
 
 
 #function on a normal list [1,2,3]
-def Put_tokens_on_list(token_function, l: list, i: int=0)->list:
-    if i == len(l) - 1:
-        return [token_function(l[i])]
-    else:
-        return [token_function(l[i])] + Put_tokens_on_list(token_function, l, i+1)
+def Put_tokens_on_list(token_function, l: list, i: int = 0)->list:
+  if i == len(l) - 1:
+    return [token_function(l[i])]
+  else:
+    return [token_function(l[i])] + Put_tokens_on_list(token_function, l, i+1)
 
 ## for list of inf size like [1,[2,[3,None]]]
 def Put_tokens_on_head_tail_list(loop_fuction ,token_function, l: list)->list:
-    if l[1] == None:
-        return [loop_fuction(token_function, l[0]), None]
-    else:
-        return [loop_fuction(token_function, l[0])] + [Put_tokens_on_head_tail_list(loop_fuction,token_function, l[1])]
+  if l[1] == None:
+    return [loop_fuction(token_function, l[0]), None]
+  else:
+    return [loop_fuction(token_function, l[0])] + [Put_tokens_on_head_tail_list(loop_fuction,token_function, l[1])]
 
 
 def get_token(string: str)->Token:
@@ -104,6 +105,8 @@ def get_token(string: str)->Token:
         return Token(Token_Types.SAME, string)
     elif string.isdigit():                      # Integer
         return Token(Token_Types.INTEGER, int(string))
+    elif string == Token_Types.PRINT.value:
+        return Token(Token_Types.PRINT, string)
     else:                                       # Variable
         return Token(Token_Types.VARIABLE, string)
 
@@ -133,7 +136,7 @@ class NumberNode(Node):
 
 #Node For variable
 class VariableNode(Node):
-  def __init__(self, token: Token, value:int = None):
+  def __init__(self, token: Token, value: int = None):
     self.token = token
     self.value = value
 
@@ -146,7 +149,7 @@ class VariableNode(Node):
 
 #Note for Operators
 class OperationNode(Node):
-  def __init__(self, left, token, right):
+  def __init__(self, left: Node, token: Token, right: Node):
     self.left = left
     self.token = token
     self.right = right
@@ -160,7 +163,7 @@ class OperationNode(Node):
 
 #Note for Conditions
 class ConditionNode(Node):
-  def __init__(self, left:Node , token: Token, right:Node):
+  def __init__(self, left: Node, token: Token, right: Node):
     self.left = left
     self.token = token
     self.right = right
@@ -188,7 +191,7 @@ class IfNode(Node):
 
 #Node for While loops
 class WhileNode(Node):
-  def __init__(self, condition):
+  def __init__(self, condition: ConditionNode):
     self.value = condition
 
   def __repr__(self):
@@ -207,7 +210,18 @@ class EndNode(Node):
     return f'{self.begin}'
 
   def __str__(self):
-    return f'{self.value}'
+    return f'{self.begin}'
+
+
+class PrintNode(Node):
+  def __init__(self, value: Node):
+    self.left = value
+
+  def __repr__(self):
+    return f'{self.left}'
+
+  def __str__(self):
+    return f'{self.left}'
 
 
 
@@ -240,6 +254,8 @@ def parser(tokens: list, index: int=0, node: Node=None)->Node:
       return EndNode(None);
     elif tokens[index].type == Token_Types.IS:# Is operator
       return VariableNode(node.token, parser(tokens, index + 1))
+    elif tokens[index].type == Token_Types.PRINT: # printing variable or int
+      return PrintNode(parser(tokens, index + 1))
     else:
       raise Exception("geen operator")
 
@@ -263,15 +279,21 @@ def parser_on_multiline(parser_function, tokens_list: list)->list:
 def Get_left_and_right(node, state):
   left = None
   right = None
-  if type(node.value) in (OperationNode, ConditionNode):
-    if type(node.value.left) == VariableNode:
-      left = state[node.value.left.value]
+  if type(node) in (WhileNode, IfNode, VariableNode):
+    if type(node.value) in (OperationNode, ConditionNode):
+      if type(node.value.left) == VariableNode:
+        left = state[node.value.left.value]
+      else:
+        left = node.value.left.value
+      if type(node.value.right) == VariableNode:
+        right = state[node.value.right.value]
+      else:
+        right = node.value.right.value
+  elif type(node) == PrintNode:
+    if type(node.left) == VariableNode:
+      left = state[node.left.value]
     else:
-      left = node.value.left.value
-    if type(node.value.right) == VariableNode:
-      right = state[node.value.right.value]
-    else:
-      right = node.value.right.value
+      left = node.left.value
   return [left, right]
 
 
@@ -375,6 +397,13 @@ def If(parserList: list, node , state: dir):
 
 
 
+#The Print function that retuns the state
+def Print( node, state: dir):
+  print(Get_left_and_right(node, state)[0])
+  return state
+
+
+
 #The main run function
 def run(parsedFuctions: list, state: dir):
     if type(parsedFuctions[0]) == IfNode:
@@ -383,6 +412,8 @@ def run(parsedFuctions: list, state: dir):
       return run(FindEnd(parsedFuctions), While(parsedFuctions, parsedFuctions[0], state))
     elif type(parsedFuctions[0]) == VariableNode:
       return run(parsedFuctions[1], Is(parsedFuctions[0], state))
+    elif type(parsedFuctions[0]) == PrintNode:
+      return run(parsedFuctions[1], Print(parsedFuctions[0], state))
     elif type(parsedFuctions[0]) == EndNode:
       return state
 
@@ -402,6 +433,7 @@ file = open(file, "r", encoding="utf-8")
 lines = file.readlines()
 
 states = {}
+states["pc"] = None
 
 lines = split_l(lines)
 lines = split_lines_words(lines)
