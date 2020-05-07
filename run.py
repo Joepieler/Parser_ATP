@@ -81,7 +81,7 @@ def get_token(string: str)->Token:
     if string == Token_Types.SUMPLUS.value:     # Plus
         return Token(Token_Types.SUMPLUS, string)
     elif string == Token_Types.SUMMIN.value:    # min
-        return Token(Token_Types.SUMIN, string)
+        return Token(Token_Types.SUMMIN, string)
     elif string == Token_Types.MULTIPLUCATION.value:# Multiply
         return Token(Token_Types.MULTIPLUCATION, string)
     elif string == Token_Types.DIVISION.value:  # Devide
@@ -281,11 +281,11 @@ def do_operation(node, states)->int:
   childs = Get_left_and_right(node, states)
   if node.value.token.type == Token_Types.SUMPLUS:
     return childs[0] + childs[1]
-  elif node.token.value == Token_Types.SUMMIN:
+  elif node.value.token.type == Token_Types.SUMMIN:
     return childs[0] - childs[1]
-  elif node.token.value == Token_Types.MULTIPLUCATION:
+  elif node.value.token.type == Token_Types.MULTIPLUCATION:
     return childs[0] * childs[1]
-  elif node.token.value == Token_Types.DIVISION:
+  elif node.value.token.type == Token_Types.DIVISION:
     if childs[1] != 0:
       return int(childs[0] / childs[1])
 
