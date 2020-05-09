@@ -408,7 +408,6 @@ def Print( node, state: dir):
 
 
 def PrintRegister(state):
-  print("lines: ")
   list(map(print, state))
   return state
 
