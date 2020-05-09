@@ -1,22 +1,28 @@
-a ist 20
-b ist 10
-wenn a größer b
-a ist a zähle 15
+a ist 0
+abdrucken 1
+wenn 2 größer 1
+abdrucken 2
+wenn 1 größer 1
+abdrucken 3
 ende
-solange a kleiner b
+abdrucken 4
+ende
+abdrucken 5
+abdrucken 6
+wenn 1 kleiner 2
+abdrucken 7
+ende
+solange a kleiner 10
 a ist a addiere 1
-ende
-wenn a gleichwie b
-b ist b multiplizieren 2
-ende
-wenn a gleichwie b
-b ist b multiplizieren 2
-ende
-c ist 20
-wenn c gleichwie b
-b ist b teilen 2
 abdrucken a
+ende
+b ist 10
+solange b größer 0
+b ist b zähle 1
+wenn b kleiner 5
 abdrucken b
-abdrucken c
-abdrucken 10
+ende
+abdrucken8
+ende
+alle_variable_drucken
 ende

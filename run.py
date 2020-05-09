@@ -7,15 +7,6 @@ import enum
 ########################################################################################################################
 
 
-#TODO
-#while loop
-#if statement
-#programma state
-#raise weghalen
-
-#map gebruiken met een print all statement
-
-
 
 class Token_Types(enum.Enum):
     VARIABLE = None
@@ -48,25 +39,18 @@ class Token():
     def __str__(self):
       return "Token(Type {}, Value\"{}\")".format(self.type.name, self.value)
 
+def put_line_in_list(lines: str)->list:
+  return lines.rstrip('\n')
 
-def split_l(lines: list, i: int = 0)->list:
-  if i == len(lines) - 1:
-    if lines[i] != '\n':
-      return [lines[i].rstrip('\n'), None]
+
+def split_lines_word(lines: str)->list:
+  return lines.split(" ")
+
+def put_in_head_teal_list(l: list, index:int = 0)->list:
+  if index == len(l) - 1:
+    return [l[index], None]
   else:
-    if lines[i] != '\n':
-      return [lines[i].rstrip('\n')] + [split_l(lines, i + 1 )]
-    else:
-      return split_l(lines, i + 1 )
-
-
-def split_lines_words(l: list)->list:
-  if l[1] == None:
-    return [l[0].split(" "), None]
-  else:
-     return [l[0].split(" ")] + [split_lines_words(l[1])]
-
-#zet lines om naar oneindige list
+    return [l[index]] + [put_in_head_teal_list(l, index + 1)]
 
 
 
@@ -453,8 +437,7 @@ def run(parsedFuctions: list, state: dir):
 def start_compiling(filename: str):
   file = open(filename, "r", encoding="utf-8")
   lines = file.readlines()
-  lines = split_l(lines)
-  lines = split_lines_words(lines)
+  lines = put_in_head_teal_list(list(map(split_lines_word, list(map(put_line_in_list, lines)))))
   tokenlist = Put_tokens_on_head_tail_list(Put_tokens_on_list, get_token, lines)
   tree = parser_on_multiline(parser, tokenlist)
   run(tree, {})
