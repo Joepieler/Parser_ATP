@@ -33,6 +33,7 @@ class Token_Types(enum.Enum):
     WHILE = 'solange'
     INTEGER = type(int)
     PRINT = "abdrucken"
+    PRINTALL = "alle_variable_drucken"
 
 
 
@@ -48,7 +49,6 @@ class Token():
       return "Token(Type {}, Value\"{}\")".format(self.type.name, self.value)
 
 
-
 def split_l(lines: list, i: int = 0)->list:
   if i == len(lines) - 1:
     if lines[i] != '\n':
@@ -60,12 +60,14 @@ def split_l(lines: list, i: int = 0)->list:
       return split_l(lines, i + 1 )
 
 
-
 def split_lines_words(l: list)->list:
   if l[1] == None:
     return [l[0].split(" "), None]
   else:
      return [l[0].split(" ")] + [split_lines_words(l[1])]
+
+#zet lines om naar oneindige list
+
 
 
 #function on a normal list [1,2,3]
@@ -110,8 +112,10 @@ def get_token(string: str)->Token:
         return Token(Token_Types.SAME, string)
     elif string.isdigit():                      # Integer
         return Token(Token_Types.INTEGER, int(string))
-    elif string == Token_Types.PRINT.value:
+    elif string == Token_Types.PRINT.value:     # Print
         return Token(Token_Types.PRINT, string)
+    elif string == Token_Types.PRINTALL.value:  # Print all
+        return Token(Token_Types.PRINTALL, string)
     else:                                       # Variable
         return Token(Token_Types.VARIABLE, string)
 
@@ -227,6 +231,10 @@ class PrintNode(Node):
     return f'Print({self.left})'
 
 
+class PrintAllNode(Node):
+  pass
+
+
 
 #Main parser function
 def parser(tokens: list, index: int=0, node: Node=None)->Node:
@@ -238,8 +246,8 @@ def parser(tokens: list, index: int=0, node: Node=None)->Node:
       return VariableNode(tokens[index], tokens[index].value)
     elif tokens[index].type == Token_Types.END:
       return EndNode()
-    else:
-      raise Exception("operator has no right side")
+    elif tokens[index].type == Token_Types.PRINTALL:
+      return PrintAllNode()
   else:
     if tokens[index].type == Token_Types.INTEGER: # Intergers
       return  parser(tokens, index + 1, NumberNode(tokens[index].value))
@@ -257,8 +265,6 @@ def parser(tokens: list, index: int=0, node: Node=None)->Node:
       return VariableNode(node.token, parser(tokens, index + 1))
     elif tokens[index].type == Token_Types.PRINT: # printing variable or int
       return PrintNode(parser(tokens, index + 1))
-    else:
-      raise Exception("geen operator")
 
 #Run parser function on every line of the code
 def parser_on_multiline(parser_function, tokens_list: list)->list:
@@ -341,8 +347,6 @@ def Is(node: Node, state:dict )->dict:
   elif type(node.value) == VariableNode:
     if node.value.token in state:
       state[node.token.value] = state[node.value.token]
-    else:
-      raise Exception("variable does not exist")
   return state
 
 
@@ -419,6 +423,13 @@ def Print( node, state: dir):
 
 
 
+def PrintRegister(state):
+  print("lines: ")
+  list(map(print, state))
+  return state
+
+
+
 #The main run function
 def run(parsedFuctions: list, state: dir):
   if parsedFuctions != None:
@@ -430,11 +441,23 @@ def run(parsedFuctions: list, state: dir):
       return run(parsedFuctions[1], Is(parsedFuctions[0], state))
     elif type(parsedFuctions[0]) == PrintNode:
       return run(parsedFuctions[1], Print(parsedFuctions[0], state))
+    elif type(parsedFuctions[0]) == PrintAllNode:
+      return run(parsedFuctions[1], PrintRegister(state))
     elif type(parsedFuctions[0]) == EndNode:
       return state
   return state
 
 
+
+
+def start_compiling(filename: str):
+  file = open(filename, "r", encoding="utf-8")
+  lines = file.readlines()
+  lines = split_l(lines)
+  lines = split_lines_words(lines)
+  tokenlist = Put_tokens_on_head_tail_list(Put_tokens_on_list, get_token, lines)
+  tree = parser_on_multiline(parser, tokenlist)
+  run(tree, {})
 
 
 
@@ -445,19 +468,6 @@ def run(parsedFuctions: list, state: dir):
 ########################################################################################################################
 
 
-
 file = "sum.gmm"
+start_compiling(file)
 
-file = open(file, "r", encoding="utf-8")
-lines = file.readlines()
-
-states = {}
-
-lines = split_l(lines)
-lines = split_lines_words(lines)
-tokenlist = Put_tokens_on_head_tail_list(Put_tokens_on_list, get_token, lines)
-#print(tokenlist)
-tree = parser_on_multiline(parser, tokenlist)
-#print(tree)
-states = run(tree, states)
-print(states)
