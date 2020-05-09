@@ -13,6 +13,7 @@ import enum
 #programma state
 #raise weghalen
 
+#map gebruiken met een print all statement
 
 
 
@@ -33,6 +34,8 @@ class Token_Types(enum.Enum):
     INTEGER = type(int)
     PRINT = "abdrucken"
 
+
+
 class Token():
     def __init__(self, token_types: Token_Types, value):
       self.type = token_types
@@ -45,6 +48,7 @@ class Token():
       return "Token(Type {}, Value\"{}\")".format(self.type.name, self.value)
 
 
+
 def split_l(lines: list, i: int = 0)->list:
   if i == len(lines) - 1:
     if lines[i] != '\n':
@@ -54,6 +58,7 @@ def split_l(lines: list, i: int = 0)->list:
       return [lines[i].rstrip('\n')] + [split_l(lines, i + 1 )]
     else:
       return split_l(lines, i + 1 )
+
 
 
 def split_lines_words(l: list)->list:
@@ -203,14 +208,12 @@ class WhileNode(Node):
 
 
 class EndNode(Node):
-  def __init__(self, begin):
-    self.begin = begin
-
   def __repr__(self):
-    return f'{self.begin}'
+    return f'EndNode'
 
   def __str__(self):
-    return f'{self.begin}'
+    return f"EndNode"
+  pass
 
 
 class PrintNode(Node):
@@ -218,10 +221,10 @@ class PrintNode(Node):
     self.left = value
 
   def __repr__(self):
-    return f'{self.left}'
+    return f'Print({self.left})'
 
   def __str__(self):
-    return f'{self.left}'
+    return f'Print({self.left})'
 
 
 
@@ -234,7 +237,7 @@ def parser(tokens: list, index: int=0, node: Node=None)->Node:
     elif tokens[index].type == Token_Types.VARIABLE: # Variable
       return VariableNode(tokens[index], tokens[index].value)
     elif tokens[index].type == Token_Types.END:
-      return EndNode(None)
+      return EndNode()
     else:
       raise Exception("operator has no right side")
   else:
@@ -250,8 +253,6 @@ def parser(tokens: list, index: int=0, node: Node=None)->Node:
       return WhileNode(parser(tokens, index +1))
     elif tokens[index].type == Token_Types.IF:# If statements
       return IfNode(parser(tokens, index + 1))
-    elif tokens[index].type == Token_Types.END:
-      return EndNode(None);
     elif tokens[index].type == Token_Types.IS:# Is operator
       return VariableNode(node.token, parser(tokens, index + 1))
     elif tokens[index].type == Token_Types.PRINT: # printing variable or int
@@ -347,33 +348,47 @@ def Is(node: Node, state:dict )->dict:
 
 
 #Finds the first end en returns the rest of the parserser
-def FindEnd(parserlist):
-  if type(parserlist[0]) == EndNode:
-    if parserlist[1] != None:
-      return parserlist[1]
+def FindEnd(parserlist, skipend: int = 0):
+  if parserlist == None:
+    return [EndNode, None]
+  if parserlist[0] != None:
+    if skipend > 0:
+      if type(parserlist[0]) == EndNode:
+        return FindEnd(parserlist[1], skipend -1)
+      elif type(parserlist[0]) in (IfNode, WhileNode):
+        return FindEnd(parserlist[1], skipend + 1)
+      else:
+        return FindEnd(parserlist[1], skipend)
     else:
-      return parserlist
+      if type(parserlist[0]) == EndNode:
+        return parserlist[1]
+      elif type(parserlist[0]) in (IfNode, WhileNode):
+        return FindEnd(parserlist[1], skipend + 1)
+      else:
+        return FindEnd(parserlist[1], skipend)
   else:
-    return FindEnd(parserlist[1])
+   return [EndNode, None]
 
 
 
 #Returns the loop
-def GetLoop(parserlist: list, whilenode: WhileNode, state: dir)->list:
-  if parserlist[1] == None and type(parserlist[0]) == EndNode:
-    return [EndNode(whilenode), None]
-  else:
-    if type(parserlist[0]) == EndNode:
-      return [EndNode(whilenode), None]
+def GetLoop(parserlist: list, whilenode: WhileNode, state: dir, skipped:int = 0)->list:
+  if type(parserlist[0]) == EndNode:
+    if skipped == 0:
+      return [EndNode(), None]
     else:
-      return [parserlist[0]] + [GetLoop(parserlist[1], whilenode, state)]
+      skipped -= 1
+  else:
+    if type(parserlist[0]) in (IfNode, WhileNode):
+      skipped += 1
+    return [parserlist[0]] + [GetLoop(parserlist[1], whilenode, state, skipped)]
 
 
 
 #The while loop function returns the state
 def While(parserList: list, node: Node, state: dir, whilenode: WhileNode = None):
   if whilenode == None:
-    if do_condition(node, state) == True:
+    if do_condition(node, state):
       parserlist = GetLoop(parserList[1], node, state)
       state = run(parserlist, state)
       return While(parserlist, node, state, node)
@@ -382,7 +397,7 @@ def While(parserList: list, node: Node, state: dir, whilenode: WhileNode = None)
   else:
     if type(node) == WhileNode:
       if do_condition(whilenode, state):
-        return While(parserList, node, run(parserList, state), node)
+        return While(parserList, node, run(parserList, state), whilenode)
       else:
         return state
 
@@ -406,16 +421,20 @@ def Print( node, state: dir):
 
 #The main run function
 def run(parsedFuctions: list, state: dir):
+  if parsedFuctions != None:
     if type(parsedFuctions[0]) == IfNode:
-      return run(FindEnd(parsedFuctions), If(parsedFuctions, parsedFuctions[0], state))
+      return run(FindEnd(parsedFuctions[1]), If(parsedFuctions, parsedFuctions[0], state))
     elif type(parsedFuctions[0]) == WhileNode:
-      return run(FindEnd(parsedFuctions), While(parsedFuctions, parsedFuctions[0], state))
+      return run(FindEnd(parsedFuctions[1]), While(parsedFuctions, parsedFuctions[0], state))
     elif type(parsedFuctions[0]) == VariableNode:
       return run(parsedFuctions[1], Is(parsedFuctions[0], state))
     elif type(parsedFuctions[0]) == PrintNode:
       return run(parsedFuctions[1], Print(parsedFuctions[0], state))
     elif type(parsedFuctions[0]) == EndNode:
       return state
+  return state
+
+
 
 
 
@@ -433,7 +452,6 @@ file = open(file, "r", encoding="utf-8")
 lines = file.readlines()
 
 states = {}
-states["pc"] = None
 
 lines = split_l(lines)
 lines = split_lines_words(lines)
