@@ -1,5 +1,5 @@
-# Germen - -
-The Germen -- code is based on a mix of German and code. The intention was to learn a little German for the summer and to fulfill the assignment. 
+# German - -
+The German -- code is based on a mix of German and code. The intention was to learn a little German for the summer and to fulfill the assignment. 
 
 ## Key words
 
